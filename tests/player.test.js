@@ -57,15 +57,15 @@ assert.match(node('stages').innerHTML, /まだクリアしていません/);
 assert.doesNotMatch(page, /id="(?:missN|stars|result)"|[★☆]|ミス\s|ノーミス/);
 // 別の版の記録(同じドメイン)は読まない。この版の記録だけでクリア済みになり、全体の進み具合に数える
 saved.set('cleared-safari', 'true'); run('home()');
-assert.match(node('done').innerHTML, /全13ステージ中 <em>0<\/em>/);
+assert.match(node('done').innerHTML, /全11ステージ中 <em>0<\/em>/);
 saved.set('v3-cleared-safari', 'true'); run('home()');
 assert.match(node('stages').innerHTML, /クリア済み ✓/);
-assert.match(node('done').innerHTML, /全13ステージ中 <em>1<\/em>/);
+assert.match(node('done').innerHTML, /全11ステージ中 <em>1<\/em>/);
 // iPhoneでは準備編(Android版)を出さず数えない。Androidを選ぶとiPhone用の準備編3つが消える
 assert.doesNotMatch(node('stages').innerHTML, /Android版/);
 assert.match(node('stages').innerHTML, /準備編[\s\S]*1\/3/);
 saved.set('v3-device', 'android'); run('home()');
-assert.match(node('done').innerHTML, /全11ステージ中/);
+assert.match(node('done').innerHTML, /全9ステージ中/);
 assert.match(node('stages').innerHTML, /Android版/);
 assert.doesNotMatch(node('stages').innerHTML, /Safariの設定/);
 run('stage = STAGES.find(s => s.id === "android")');
@@ -228,7 +228,11 @@ for (let i = 0; i < count; i++) {
 }
 assert.ok(images.every(src => !src.includes('undefined')));
 run('home()');
-assert.equal((node('stages').innerHTML.match(/クリア済み ✓/g) || []).length, count - 1); // iPhone表示ではAndroid版を出さない
+assert.equal((node('stages').innerHTML.match(/クリア済み ✓/g) || []).length, count - 1 - run('STAGES.filter(s => s.hidden).length')); // iPhone表示ではAndroid版を出さない
+// 非表示(hidden)のステージは一覧に出さず、「次のステージへ」でも飛ばす
+assert.doesNotMatch(node('stages').innerHTML, /案件の進め方（/);
+run('stage = STAGES.find(s => s.id === "unext-pending")');
+assert.equal(run('STAGES[nextStage()].id'), 'passbook');
 assert.doesNotMatch(node('stages').innerHTML, /[★☆]|まだクリアしていません/);
 // 保存が使えない環境でも、クリアとホーム表示を続行する。
 run('localStorage.getItem = () => { throw Error("unavailable"); }; localStorage.setItem = () => { throw Error("unavailable"); }; start(0); clear(); home()');
@@ -244,7 +248,6 @@ saved.clear(); flush();
 const indexOf = id => run(`STAGES.findIndex(s => s.id === ${JSON.stringify(id)})`);
 saved.set('v3-device', 'android'); run('home()');
 assert.doesNotMatch(node('stages').innerHTML, /Safari/);
-assert.match(node('stages').innerHTML, /スクールの案内のURLをChromeで開くまで/);
 for (const id of JSON.parse(run('JSON.stringify(visible().map(s => s.id))'))) {
   run(`start(${indexOf(id)})`);
   assert.doesNotMatch(run("JSON.stringify({ ...stage, base: null })"), /Safari/, id);

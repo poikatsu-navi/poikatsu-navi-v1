@@ -296,6 +296,7 @@ const STAGES = [
   },
   {
     id: 'browser-flow',
+    hidden: true, // 一旦非表示
     title: '案件の進め方（ブラウザ経由）',
     lead: 'スクールの案内のURLをSafariで開くまで',
     guide: true,
@@ -314,6 +315,7 @@ const STAGES = [
   },
   {
     id: 'a8-flow',
+    hidden: true, // 一旦非表示
     title: '案件の進め方（A8.net経由）',
     lead: 'A8.netのセルフバックから申し込むまで',
     guide: true,

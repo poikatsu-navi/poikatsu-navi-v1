@@ -238,7 +238,8 @@
   // 準備編はスマホに合うものだけ出す。最初は端末から推測し、選び直したら覚えておく
   const DEVICE = 'v3-device';
   const device = () => { try { const d = localStorage.getItem(DEVICE); if (d) return d; } catch {} return /android/i.test(navigator.userAgent || '') ? 'android' : 'iphone'; };
-  const visible = () => STAGES.filter(s => !s.device || s.device === device());
+  // hidden: true のステージは一覧に出さない(中身は残しておき、あとで戻せる)
+  const visible = () => STAGES.filter(s => !s.hidden && (!s.device || s.device === device()));
   // Androidを選んだ人には、準備編のあとのステージも「Safari」を「Chrome」と書いて見せる(ブラウザの中の画面はiPhoneのまま)。
   // 言い方や画像を変えたいステップは、そのステップの android に書く。base は元のステージ(次のステージ・もう一度で使う)
   const swapBrowser = v => typeof v === 'string' ? v.replace(/Safari/g, 'Chrome')
