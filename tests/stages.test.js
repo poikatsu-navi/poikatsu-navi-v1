@@ -25,7 +25,7 @@ test('every scroll followed by a tap accepts a mid-scroll tap', () => {
   });
 });
 test('Safari tracking warning is the short keep-once note', () => {
-  assert.equal(stages[0].steps.find(s => s.after).warn, '「サイト越えトラッキングを防ぐ」は一度設定すればキープされるので、毎回の確認は不要。');
+  assert.equal(stages[0].steps.find(s => s.after).warn, '「サイト越えトラッキングを防ぐ」は一度設定すれば保持されるため、毎回確認する必要はありません。');
 });
 function rect(r, label) {
   assert.ok(Array.isArray(r) && r.length === 4 && r.every(Number.isFinite), label);
@@ -123,7 +123,7 @@ test('no info step repeats the instruction of the next tap on the same screen', 
   for (const st of stages) st.steps.forEach((s, i) => {
     const next = st.steps[i + 1];
     if (s.type === 'info' && next?.type === 'tap' && s.img && s.img === next.img)
-      assert.ok(!next.text.includes(s.text.replace(/しよう$/, '')), st.id + ':' + (i + 1) + ' ' + s.text);
+      assert.ok(!next.text.includes(s.text.replace(/(しよう|してください)$/, '')), st.id + ':' + (i + 1) + ' ' + s.text);
   });
   assert.doesNotMatch(source, /text: '各項目を入力しよう'/);
 });
