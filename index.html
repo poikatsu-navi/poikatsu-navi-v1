@@ -500,8 +500,7 @@
       later(go, s.after || s.copy ? 1200 : 550);
     } else if (s.type === 'scroll') {
       later(go, 350);
-    } else if (s.copy) later(go, 900); // コピーしたことを少し見せてから進む
-    else go();
+    } else go();
   }
 
   function advance() {
