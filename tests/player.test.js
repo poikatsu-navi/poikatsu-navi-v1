@@ -213,6 +213,20 @@ for (let i = 0; i < count; i++) {
   for (const s of steps.filter(s => s.warn)) assert.ok(node('review').innerHTML.includes(s.warn));
   console.log('PASS full playthrough ' + run('stage.id'));
 }
+// copy 付きのタップは、正解したときにそのURLを本当にコピーする
+{
+  const copied = [];
+  ctx.navigator.clipboard = { writeText: text => { copied.push(text); return Promise.resolve(); } };
+  run(`start(STAGES.findIndex(s => s.id === 'hapitas-register'))`);
+  const steps = run('stage.steps').map((s, k) => [s, k]).filter(([s]) => s.copy);
+  assert.equal(JSON.stringify(steps.map(([s]) => s.copy)), JSON.stringify(['https://hapitas.jp/register/?i=23093511&route=text', 'https://pc.moppy.jp/']));
+  for (const [s, k] of steps) {
+    run(`si = ${k}; step()`); tap(s.rect);
+    assert.equal(copied.at(-1), s.copy); assert.equal(node('toast').textContent, 'リンクをコピーしました');
+    flush(); assert.equal(run('si'), k + 1);
+  }
+  delete ctx.navigator.clipboard;
+}
 // 対象外の答えを選ぶと、案内のあとステージを終える(そのあとの手順は出さない)
 {
   const k = run(`STAGES.find(s => s.id === 'unext-flow').steps.findIndex(s => s.choices?.some(c => c.end))`);

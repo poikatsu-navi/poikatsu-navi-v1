@@ -111,6 +111,7 @@
     padding: 8px 14px; border-radius: 12px; width: max-content; max-width: 92%; white-space: normal; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 5;
   }
   #toast.on { opacity: 1; }
+  #toast.ok { background: var(--ok); } /* コピーできたなど、うまくいったときのひとこと */
 
   /* 指示のカード */
   #card {
@@ -451,12 +452,25 @@
     navigator.vibrate?.(60);
     shot.classList.remove('shake'); void shot.offsetWidth; shot.classList.add('shake');
     toast.textContent = msg;
+    toast.classList.remove('ok');
     toast.style.left = Math.min(Math.max(x, 25), 75) + '%';
     toast.style.top = Math.max(y, 12) + '%';
     toast.classList.add('on');
     clearTimeout(miss.t); miss.t = setTimeout(() => toast.classList.remove('on'), 1400);
     // 2回間違えたら正解の場所を光らせる
     if (stepMisses >= 2 && stage.steps[si].type === 'tap') target.classList.add('hint');
+  }
+
+  // copy: 押したら、そのURLを本当にコピーする(練習のあと、そのままブラウザに貼り付けられるように)
+  function copyText(text) {
+    const fallback = () => {
+      try {
+        const t = document.createElement('textarea');
+        t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;opacity:0';
+        document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+      } catch {}
+    };
+    try { navigator.clipboard ? navigator.clipboard.writeText(text).catch(fallback) : fallback(); } catch { fallback(); }
   }
 
   function correct() {
@@ -467,10 +481,16 @@
     const later = (fn, ms) => setTimeout(() => { if (version === playVersion) fn(); }, ms);
     toast.classList.remove('on');
     const go = () => s.warn ? openModal(s.warn, s.warnMark) : advance();
+    if (s.copy) {
+      copyText(s.copy);
+      toast.textContent = 'リンクをコピーしました';
+      toast.style.left = '50%'; toast.style.top = '45%';
+      toast.classList.add('on', 'ok');
+    }
     if (s.type === 'tap') {
       target.className = 'hit';
       later(() => { if (s.after) { setImg(src(s.after)); target.className = ''; } }, 350);
-      later(go, s.after ? 1200 : 550);
+      later(go, s.after || s.copy ? 1200 : 550);
     } else if (s.type === 'scroll') {
       later(go, 350);
     } else go();

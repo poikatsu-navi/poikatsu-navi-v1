@@ -17,6 +17,7 @@
 // warn: 正解のあとに出す重要ポイント(クリア画面のおさらいにも出る)
 // img / after: img/ 内の拡張子なしの名前。info / quiz の img は省略可
 // html: 画像の代わりに表示する信頼済みの静的HTML(590x1280)。外部入力を入れない
+// copy: 正解のタップで、このURLを本当にクリップボードにコピーする
 // video: 'name' 注釈入りの手順動画(video/name.mp4)をアプリ内で再生する
 // 架空画面の部品。ボタンと判定を同じ座標で作り、縮小しても位置を合わせる。
 function fxScreen(title, body = '', buttons = []) {
@@ -170,7 +171,7 @@ const STAGES = [
         text: 'まずはハピタスに登録します。初めて登録する方は、必ずスクールのノートのリンクから登録してください',
         sub: '紹介ボーナスを受け取れます。すでにアカウントをお持ちの方は、登録の手順は確認のみで構いません。' },
       { type: 'info', img: 'hr-note', card: 'bottom', next: '選択しました', marks: [[14, 565, 560, 40]], markLabel: '長押し', text: 'リンクを長押しして選択してください' },
-      { type: 'tap', img: 'hr-note', text: '「コピー」をタップ', rect: [147, 624, 115, 61] },
+      { type: 'tap', img: 'hr-note', text: '「コピー」をタップ', sub: 'タップすると、ハピタスの登録用リンクが実際にコピーされます。', copy: 'https://hapitas.jp/register/?i=23093511&route=text', rect: [147, 624, 115, 61] },
       { type: 'tap', img: 'hapitas-home', guide: false, text: 'Safariを開いてください', rect: [445, 98, 110, 132],
         traps: [{ rect: [309, 98, 110, 132], alert: 'ポイントサイトは、アプリでは決して開かないでください。\n必ずSafariから開いてください。' }, { rect: [173, 98, 110, 132], alert: 'ポイントサイトは、アプリでは決して開かないでください。\n必ずSafariから開いてください。' }],
         review: 'ポイントサイトはアプリでは開かず、必ずSafariから開きます。',
@@ -188,7 +189,7 @@ const STAGES = [
         text: '続いてモッピーに登録します。ノートのリンクから、メールアドレスで登録してください',
         sub: 'モッピーの招待制度は、今後の案件に支障が出るため使いません。すでにアカウントをお持ちの方は、登録の手順は確認のみで構いません。' },
       { type: 'info', img: 'mp-note', card: 'bottom', next: '選択しました', marks: [[14, 433, 560, 44]], markLabel: '長押し', text: 'ハピタスと同じように、リンクを長押しして選択してください' },
-      { type: 'tap', img: 'mp-copy', text: '「コピー」をタップ', rect: [147, 500, 115, 61] },
+      { type: 'tap', img: 'mp-copy', text: '「コピー」をタップ', sub: 'タップすると、モッピーの登録用リンクが実際にコピーされます。', copy: 'https://pc.moppy.jp/', rect: [147, 500, 115, 61] },
       { type: 'tap', img: 'hapitas-home', guide: false, text: 'Safariを開いてください', rect: [445, 98, 110, 132],
         traps: [{ rect: [309, 98, 110, 132], alert: 'ポイントサイトは、アプリでは決して開かないでください。\n必ずSafariから開いてください。' }, { rect: [173, 98, 110, 132], alert: 'ポイントサイトは、アプリでは決して開かないでください。\n必ずSafariから開いてください。' }],
         android: { img: 'an-home-apps', rect: [180, 531, 86, 84],
