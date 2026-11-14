@@ -120,10 +120,6 @@
     padding: 8px 14px; border-radius: 12px; width: max-content; max-width: 92%; white-space: normal; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 5;
   }
   #toast.on { opacity: 1; }
-  /* 正解したときの〇 */
-  #good { position: absolute; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; border: 9px solid var(--ok); pointer-events: none; z-index: 6; display: none; }
-  #good.on { display: block; animation: good .6s ease-out forwards; }
-  @keyframes good { 0% { transform: scale(.3); opacity: 0 } 35% { transform: scale(1.1); opacity: 1 } 100% { transform: scale(1); opacity: 0 } }
 
   /* 指示のカード */
   #card {
@@ -220,7 +216,6 @@
     <div id="warnMark"></div>
     <div id="swipe">👆</div>
     <div id="toast"></div>
-    <div id="good"></div>
     <div id="card"></div>
   </div>
 </section>
@@ -526,15 +521,6 @@
     si = Math.max(k, 0); step();
   }
 
-  // 正解したら〇を出す(タップした場所。なければ画面の真ん中)
-  function showGood(r) {
-    const g = $('good');
-    g.style.left = (r ? (r[0] + r[2] / 2) / 5.9 : 50) + '%';
-    g.style.top = (r ? (r[1] + r[3] / 2) / 12.8 : 45) + '%';
-    g.classList.remove('on'); void g.offsetWidth; g.classList.add('on');
-    navigator.vibrate?.(20);
-  }
-
   function correct() {
     const s = stage.steps[si];
     busy = true;
@@ -542,7 +528,6 @@
     const version = playVersion;
     const later = (fn, ms) => setTimeout(() => { if (version === playVersion) fn(); }, ms);
     toast.classList.remove('on');
-    if (s.type !== 'info') showGood(s.type === 'tap' ? s.rect : null);
     const go = () => s.warn ? openModal(s.warn, s.warnMark) : advance();
     if (s.type === 'tap') {
       target.className = 'hit';
