@@ -111,7 +111,6 @@
     padding: 8px 14px; border-radius: 12px; width: max-content; max-width: 92%; white-space: normal; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 5;
   }
   #toast.on { opacity: 1; }
-  #toast.ok { background: var(--ok); } /* コピーできたなど、うまくいったときのひとこと */
 
   /* 指示のカード */
   #card {
@@ -137,7 +136,6 @@
   #card.compact .btns { margin-top: 8px; gap: 8px; }
   #card.compact .btns button { padding: 9px; font-size: 14px; }
   #card .btns button.video-btn { background: #eaf0ff; color: #1d3272; border: 2px solid #1d3272; }
-  #card .btns button.tab-btn { background: var(--accent); }
   #card p.inapp { color: var(--warn); font-weight: 700; }
   /* 手順動画の再生画面 */
   #player { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; z-index: 20; }
@@ -343,9 +341,9 @@
     const banner = s.banner ? `<div class="banner ${s.banner.tone || ''}">${s.banner.text}</div>` : '';
     let html = banner + `<small>${no} / ${total}　${label}</small><b>${s.text}</b>` + (s.sub ? `<p>${s.sub}</p>` : '');
     if (s.type === 'quiz') html += `<div class="btns">${s.choices.map((c, i) => `<button data-c="${i}">${c.label}</button>`).join('')}</div>`;
-    // openTab: 本物の新しいタブを開いて、コピーしたリンクを実際に貼り付けてもらう
-    if (s.openTab && inApp()) html += `<p class="inapp">LINEなどのアプリの中でこのページを開いています。新しいタブもアプリの中で開いてしまうため、このページをSafariで開き直してから試してください。</p>`;
-    if (s.type === 'info') html += `<div class="btns">${s.video ? '<button class="video-btn" data-video>▶ 手順動画を見る</button>' : ''}${s.openTab ? '<button class="tab-btn" data-tab>新しいタブを開く</button>' : ''}<button data-next>${s.next || '次へ'}</button></div>`;
+    // open: 「続ける」で本物のページを新しいタブで開く。アプリ内ブラウザでは、Safariで開き直す案内を出す
+    if (s.open && inApp()) html += `<p class="inapp">LINEなどのアプリの中でこのページを開いています。新しいタブもアプリの中で開いてしまうため、このページをSafariで開き直してから進めてください。</p>`;
+    if (s.type === 'info') html += `<div class="btns">${s.video ? '<button class="video-btn" data-video>▶ 手順動画を見る</button>' : ''}<button data-next>${s.next || '次へ'}</button></div>`;
     card.innerHTML = html;
     if (!plain) avoidBoxes(s);
     card.scrollTop = 0;
@@ -456,7 +454,6 @@
     navigator.vibrate?.(60);
     shot.classList.remove('shake'); void shot.offsetWidth; shot.classList.add('shake');
     toast.textContent = msg;
-    toast.classList.remove('ok');
     toast.style.left = Math.min(Math.max(x, 25), 75) + '%';
     toast.style.top = Math.max(y, 12) + '%';
     toast.classList.add('on');
@@ -465,20 +462,14 @@
     if (stepMisses >= 2 && stage.steps[si].type === 'tap') target.classList.add('hint');
   }
 
-  // copy: 押したら、そのURLを本当にコピーする(練習のあと、そのままブラウザに貼り付けられるように)
-  function copyText(text) {
-    const fallback = () => {
-      try {
-        const t = document.createElement('textarea');
-        t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;opacity:0';
-        document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
-      } catch {}
-    };
-    try { navigator.clipboard ? navigator.clipboard.writeText(text).catch(fallback) : fallback(); } catch { fallback(); }
-  }
-
   // LINE・Facebook・Instagramなどのアプリ内ブラウザ(ポイントサイトの申し込みには使わない)
   const inApp = () => /\bLine\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent || '');
+  // back の答え: 直前の open(本物のページを開く手順)まで戻る
+  function goBack() {
+    let k = si - 1;
+    while (k > 0 && !stage.steps[k].open) k--;
+    si = Math.max(k, 0); step();
+  }
 
   function correct() {
     const s = stage.steps[si];
@@ -488,16 +479,10 @@
     const later = (fn, ms) => setTimeout(() => { if (version === playVersion) fn(); }, ms);
     toast.classList.remove('on');
     const go = () => s.warn ? openModal(s.warn, s.warnMark) : advance();
-    if (s.copy) {
-      copyText(s.copy);
-      toast.textContent = 'リンクをコピーしました';
-      toast.style.left = '50%'; toast.style.top = '45%';
-      toast.classList.add('on', 'ok');
-    }
     if (s.type === 'tap') {
       target.className = 'hit';
       later(() => { if (s.after) { setImg(src(s.after)); target.className = ''; } }, 350);
-      later(go, s.after || s.copy ? 1200 : 550);
+      later(go, s.after ? 1200 : 550);
     } else if (s.type === 'scroll') {
       later(go, 350);
     } else go();
@@ -582,16 +567,14 @@
     if (busy) return;
     const s = stage.steps[si];
     if (e.target.dataset.video !== undefined) return openVideo(s.video);
-    if (e.target.dataset.tab !== undefined) {
-      // 念のためもう一度コピーしてから、空のタブを開く(貼り付けは利用者が行う)
-      copyText(s.openTab);
-      window.open?.('about:blank', '_blank');
-      return;
+    if (e.target.dataset.next !== undefined) {
+      if (s.open) window.open?.(s.open, '_blank'); // タップした瞬間に開く(ポップアップを止められないように)
+      return correct();
     }
-    if (e.target.dataset.next !== undefined) return correct();
     if (e.target.dataset.c === undefined) return;
     const c = s.choices[e.target.dataset.c];
     // say: 答えに応じた案内を出してから進む。end を付けた答えは、案内のあとステージを終える
+    if (c.back) return goBack();
     if (c.say) { busy = true; ending = Boolean(c.end); openModal(c.say, null, c.title); return; }
     if (c.ok) return correct();
     e.target.classList.add('ng');

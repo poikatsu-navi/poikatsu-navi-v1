@@ -213,40 +213,6 @@ for (let i = 0; i < count; i++) {
   for (const s of steps.filter(s => s.warn)) assert.ok(node('review').innerHTML.includes(s.warn));
   console.log('PASS full playthrough ' + run('stage.id'));
 }
-// copy 付きのタップは、正解したときにそのURLを本当にコピーする
-{
-  const copied = [];
-  ctx.navigator.clipboard = { writeText: text => { copied.push(text); return Promise.resolve(); } };
-  run(`start(STAGES.findIndex(s => s.id === 'hapitas-register'))`);
-  const steps = run('stage.steps').map((s, k) => [s, k]).filter(([s]) => s.copy);
-  assert.equal(JSON.stringify(steps.map(([s]) => s.copy)), JSON.stringify(['https://hapitas.jp/register/?i=23093511&route=text', 'https://pc.moppy.jp/']));
-  for (const [s, k] of steps) {
-    run(`si = ${k}; step()`); tap(s.rect);
-    assert.equal(copied.at(-1), s.copy); assert.equal(node('toast').textContent, 'リンクをコピーしました');
-    flush(); assert.equal(run('si'), k + 1);
-  }
-  delete ctx.navigator.clipboard;
-}
-// openTab 付きの説明は「新しいタブを開く」を出し、押すとURLをコピーし直して空のタブを開く(進まない)
-{
-  const copied = [], opened = [];
-  ctx.navigator.clipboard = { writeText: text => { copied.push(text); return Promise.resolve(); } };
-  ctx.window.open = (...a) => opened.push(a);
-  run(`start(STAGES.findIndex(s => s.id === 'hapitas-register'))`);
-  const tabs = run('stage.steps').map((s, k) => [s, k]).filter(([s]) => s.openTab);
-  assert.equal(tabs.length, 2);
-  for (const [s, k] of tabs) {
-    run(`si = ${k}; step()`);
-    assert.match(node('card').innerHTML, /data-tab>新しいタブを開く</);
-    assert.doesNotMatch(node('card').innerHTML, /class="inapp"/);
-    clickCard({ tab: '' });
-    assert.equal(copied.at(-1), s.openTab); assert.equal(opened.at(-1)[0], 'about:blank'); assert.equal(run('si'), k);
-  }
-  // LINEなどのアプリ内ブラウザでは、Safariで開き直す案内を出す
-  ctx.navigator.userAgent = 'Mozilla/5.0 (iPhone) Safari Line/14.0.0';
-  run(`si = ${tabs[0][1]}; step()`); assert.match(node('card').innerHTML, /class="inapp"/);
-  delete ctx.navigator.userAgent; delete ctx.navigator.clipboard; delete ctx.window.open;
-}
 // 対象外の答えを選ぶと、案内のあとステージを終える(そのあとの手順は出さない)
 {
   const k = run(`STAGES.find(s => s.id === 'unext-flow').steps.findIndex(s => s.choices?.some(c => c.end))`);
@@ -286,20 +252,32 @@ for (const id of JSON.parse(run('JSON.stringify(visible().map(s => s.id))'))) {
   run(`start(${indexOf(id)})`);
   assert.doesNotMatch(run("JSON.stringify({ ...stage, base: null })"), /Safari/, id);
 }
-// 入口はAndroidのホーム画面。Chromeで進み、ポイントサイトのアプリは重要ポイントを出して進まない
-run(`start(${indexOf('hapitas-register')})`);
-const entry = run('stage.steps.findIndex(s => s.img === "an-home-apps")');
-assert.ok(entry >= 0);
-run(`si = ${entry}; step()`);
-assert.equal(node('img').src, 'img/an-home-apps.jpg');
-assert.match(node('card').innerHTML, /Chromeを開いてください/);
-tap([324, 528, 92, 124]);
-assert.ok(node('modal').classList.contains('on'));
-assert.match(node('modalText').textContent, /必ずChromeから開いてください/);
-assert.equal(run('si'), entry);
-node('modalOk').onclick(); tap([180, 531, 86, 84]); assert.equal(run('si'), entry); flush(); assert.equal(run('si'), entry + 1);
-// ブラウザを開いた最初の画面(検索欄)もChromeの画面。ブラウザ経由のステージも同じ
-assert.equal(node('img').src, 'img/an-chrome.jpg');
+// 登録の手順: 「続ける」で本物の登録ページを新しいタブで開き、「完了しましたか？」で「いいえ」なら開く手順に戻る
+{
+  const opened = [];
+  ctx.window.open = (...a) => opened.push(a);
+  run(`start(${indexOf('hapitas-register')})`);
+  const steps = run('stage.steps');
+  const opens = steps.map((s, k) => [s, k]).filter(([s]) => s.open);
+  assert.equal(JSON.stringify(opens.map(([s]) => s.open)), JSON.stringify(['https://hapitas.jp/register/?i=23093511&route=text', 'https://pc.moppy.jp/']));
+  for (const [s, k] of opens) {
+    run(`si = ${k}; step()`);
+    assert.match(node('card').innerHTML, /data-next>続ける</);
+    assert.doesNotMatch(node('card').innerHTML, /class="inapp"/);
+    clickCard({ next: '' });
+    assert.equal(opened.at(-1)[0], s.open); assert.equal(opened.at(-1)[1], '_blank'); assert.equal(run('si'), k + 1);
+    const q = steps[k + 1];
+    assert.equal(q.type, 'quiz');
+    clickCard({ c: String(q.choices.findIndex(c => c.back)) }); assert.equal(run('si'), k); // いいえ → 開く手順に戻る
+    clickCard({ next: '' }); clickCard({ c: String(q.choices.findIndex(c => c.say)) }); // はい → 案内を出して進む
+    assert.ok(node('modal').classList.contains('on')); node('modalOk').onclick();
+    assert.ok(run('si') === k + 2 || node('clear').classList.contains('on'));
+  }
+  // LINEなどのアプリ内ブラウザでは、Safariで開き直す案内を出す
+  ctx.navigator.userAgent = 'Mozilla/5.0 (iPhone) Safari Line/14.0.0';
+  run(`si = ${opens[0][1]}; step()`); assert.match(node('card').innerHTML, /class="inapp"/);
+  delete ctx.navigator.userAgent; delete ctx.window.open;
+}
 run(`start(${indexOf('browser-flow')})`);
 assert.ok(run('stage.steps.some(s => s.img === "an-chrome" && s.text === "Chromeを開いて、検索欄をタップしてください")'));
 run(`start(${indexOf('unext-flow')})`);
@@ -321,9 +299,7 @@ saved.set('v3-device', 'iphone');
 run(`start(${indexOf('passbook')})`);
 assert.equal(node('img').style.clipPath, ''); assert.equal(node('shot').style.background, '');
 run(`start(${indexOf('hapitas-register')})`);
-const home = run('stage.steps.findIndex(s => s.img === "hapitas-home")');
-assert.ok(home > 0); assert.equal(run(`stage.steps[${home + 1}].img`), 'hr-safari');
-assert.match(run('JSON.stringify(stage)'), /Safariを開いてください/);
+assert.match(run('JSON.stringify(stage)'), /必ずSafariからハピタスを開いてください/);
 console.log('PASS android shows Chrome instead of Safari');
 
 // 狭い押す場所は少し外れても正解。間違いの場所(traps)は今までどおり優先する

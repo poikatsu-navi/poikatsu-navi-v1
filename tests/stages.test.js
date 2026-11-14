@@ -64,8 +64,9 @@ for (const stage of stages) test(stage.id + ' data and assets', () => {
       assert.ok(Array.isArray(s.choices) && s.choices.length >= 2, label);
       if (s.choices.some(c => c.say)) {
         // 答えで分かれる質問: どの答えにも案内があり、続ける答えと終える答えが1つ以上ずつある
-        for (const c of s.choices) assert.ok(c.label && c.say && c.title, label);
-        assert.ok(s.choices.some(c => c.end) && s.choices.some(c => !c.end), label);
+        // 答えで分かれる質問: 進む答えには案内があり、戻る答え(back)か終える答え(end)が1つ以上ある
+        for (const c of s.choices) assert.ok(c.label && (c.back || (c.say && c.title)), label);
+        assert.ok(s.choices.some(c => c.say && !c.end) && s.choices.some(c => c.end || c.back), label);
       } else {
         assert.equal(s.choices.filter(c => c.ok === true).length, 1, label);
         for (const c of s.choices) assert.ok(c.label && (c.ok || c.msg), label);
