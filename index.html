@@ -25,7 +25,12 @@
   #home h1 { font-size: 30px; line-height: 1.35; }
   #home p { opacity: .85; line-height: 1.6; }
   .stage { background: #fff; color: var(--ink); border-radius: 18px; padding: 18px 20px; text-align: left; display: block; width: 100%; }
-  .stage b { display: block; font-size: 20px; }
+  .stage b { display: block; font-size: clamp(17px, 5.2vw, 20px); line-height: 1.4; }
+  /* 「準備編①　Safariの設定」のように全角スペースの前は、小さい見出しとして1行目に出す(途中で折り返さないように) */
+  .stage small.kicker { display: block; font-size: 13px; font-weight: 900; color: var(--accent); margin-bottom: 2px; }
+  /* 続きから */
+  #resume { text-align: left; line-height: 1.4; }
+  #resume small { display: block; font-size: 13px; opacity: .9; }
   .stage span { display: block; font-size: 14px; color: #55607a; margin-top: 4px; }
   .stage i { display: block; font-style: normal; margin-top: 10px; font-size: 14px; color: var(--ok); }
   .stage i.none { color: #55607a; }
@@ -53,6 +58,8 @@
   .bar button { background: rgba(255, 255, 255, .15); width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
   .bar button#prev { width: auto; border-radius: 18px; padding: 0 12px; font-size: 14px; font-weight: 700; flex: none; }
   .bar button#prev:disabled { opacity: .35; }
+  /* 何手順目か(バーの右) */
+  #count { flex: none; font-weight: 900; font-size: 15px; min-width: 44px; text-align: right; }
   .track { flex: 1; height: 10px; background: rgba(255, 255, 255, .2); border-radius: 99px; overflow: hidden; }
   .track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
   /* スクショの枠。高さに合わせて、比率 590:1280 を保つ */
@@ -113,6 +120,10 @@
     padding: 8px 14px; border-radius: 12px; width: max-content; max-width: 92%; white-space: normal; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 5;
   }
   #toast.on { opacity: 1; }
+  /* 正解したときの〇 */
+  #good { position: absolute; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; border: 9px solid var(--ok); pointer-events: none; z-index: 6; display: none; }
+  #good.on { display: block; animation: good .6s ease-out forwards; }
+  @keyframes good { 0% { transform: scale(.3); opacity: 0 } 35% { transform: scale(1.1); opacity: 1 } 100% { transform: scale(1); opacity: 0 } }
 
   /* 指示のカード */
   #card {
@@ -129,6 +140,7 @@
   #card .btns { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
   #card .btns button { background: var(--ink); color: #fff; font-weight: 700; font-size: 16px; padding: 14px; border-radius: 12px; }
   #card .btns button.ng { background: #b3bbcc; }
+  #card .btns button small { display: block; color: inherit; opacity: .75; font-size: 12px; font-weight: 700; margin: 2px 0 0; }
   #card.compact { padding: 10px 14px; }
   #card .banner { margin: -2px 0 8px; padding: 8px 12px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 900; font-size: 20px; line-height: 1.3; text-align: center; }
   #card .banner.buy { background: #e5263a; } #card .banner.sell { background: #1f6fe0; }
@@ -165,7 +177,15 @@
 
   /* ---- クリア画面 ---- */
   #clear { padding: 56px 20px 32px; gap: 16px; max-width: 520px; margin: 0 auto; text-align: center; }
-  #clear h2 { font-size: 30px; }
+  #clear h2 { font-size: 30px; animation: pop .5s cubic-bezier(.2, 1.4, .4, 1); }
+  #clearName { font-size: 18px; font-weight: 900; opacity: .95; margin-top: -6px; }
+  /* 完了画面のボタンは画面の下に固定する(おさらいが長くても見えるように) */
+  #clear .actions { position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 10px; margin: auto -20px -32px; padding: 14px 20px calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg2) 22%); }
+  #clear .actions .row { display: flex; gap: 10px; }
+  #clear .actions .row .wide { padding: 13px 8px; font-size: 15px; }
+  #confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 30; }
+  #confetti i { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; animation: fall 1.8s ease-in forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
   #clear ul { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 10px; }
   #clear li { background: #fff; color: var(--ink); border-left: 8px solid var(--warn); border-radius: 12px; padding: 12px 14px; font-size: 15px; line-height: 1.6; font-weight: 700; white-space: pre-line; }
   #clear h3 { text-align: left; font-size: 16px; margin-top: 8px; }
@@ -180,6 +200,7 @@
   <p>実際の画面をタップしながら、申し込みの手順と注意点を練習できます。本物の申し込みは行われません。</p>
   <div id="device">お使いのスマホ<button data-d="iphone">iPhone</button><button data-d="android">Android</button></div>
   <div id="done"></div>
+  <button class="wide" id="resume" hidden></button>
   <div id="stages" style="display:flex; flex-direction:column; gap:14px"></div>
 </section>
 
@@ -188,6 +209,7 @@
     <button id="quit" aria-label="やめる">✕</button>
     <button id="prev" aria-label="ひとつ前に戻る">‹ 戻る</button>
     <div class="track"><i id="prog"></i></div>
+    <span id="count"></span>
   </div>
   <div id="shot">
     <img id="img" alt="">
@@ -198,19 +220,26 @@
     <div id="warnMark"></div>
     <div id="swipe">👆</div>
     <div id="toast"></div>
+    <div id="good"></div>
     <div id="card"></div>
   </div>
 </section>
 
 <section id="clear" class="view">
-  <h2>ステージクリア</h2>
+  <h2>🎉 ステージクリア</h2>
+  <p id="clearName"></p>
   <h3 id="reviewTitle">⚠️ 重要ポイントのおさらい</h3>
   <ul id="review"></ul>
-  <button class="wide" id="next">次のステージへ</button>
-  <button class="wide sub" id="again">もう一度</button>
-  <button class="wide sub" id="back">ステージ一覧</button>
+  <div class="actions">
+    <button class="wide" id="next">次のステージへ</button>
+    <div class="row">
+      <button class="wide sub" id="again">もう一度</button>
+      <button class="wide sub" id="back">ステージ一覧</button>
+    </div>
+  </div>
 </section>
 
+<div id="confetti"></div>
 <div id="player"><video id="video" controls playsinline preload="none"></video><button id="playerClose">閉じて練習に戻る</button></div>
 <div id="modal"><div><em id="modalTitle">⚠️ 重要ポイント</em><p id="modalText"></p><button id="modalOk">わかりました</button></div></div>
 
@@ -255,6 +284,9 @@
   // まとまりは、全ステージの並び順で決める(?only で絞り込んでも変わらないよう、先に付けておく)
   STAGES.forEach((s, i) => { s.area = AREAS.reduce((a, r, k) => (i >= STAGES.findIndex(t => t.id === r.start) ? k : a), 0); });
 
+  // 全角スペースの前を小さい見出しにする(例: 「準備編①」と「Safariの設定」)
+  const titleHtml = t => { const k = t.indexOf('　'); return k > 0 ? `<small class="kicker">${t.slice(0, k)}</small><b>${t.slice(k + 1)}</b>` : `<b>${t}</b>`; };
+
   function show(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === id));
     window.scrollTo(0, 0);
@@ -278,12 +310,19 @@
           `<span class="${got === mates.length ? 'all' : ''}">${got}/${mates.length}</span></div>`;
       }
       const { title, lead } = forDevice(s);
-      return head + `<button class="stage" data-i="${STAGES.indexOf(s)}"><span class="stage-number">${no}</span><b>${title}</b><span>${lead}</span>` +
+      return head + `<button class="stage" data-i="${STAGES.indexOf(s)}"><span class="stage-number">${no}</span>${titleHtml(title)}<span>${lead}</span>` +
         (done ? `<i>クリア済み ✓</i>` : `<i class="none">まだクリアしていません</i>`) + `</button>`;
     }).join('');
     const n = list.filter(s => isCleared(s.id)).length;
-    $('done').innerHTML = `<b>全${list.length}ステージ中 <em>${n}</em> ステージクリア</b>` +
+    $('done').innerHTML = `<b><em>${n}</em> / ${list.length} ステージクリア</b>` +
       `<div class="track"><i style="width:${n / list.length * 100}%"></i></div>`;
+    // 続きから: まだクリアしていない最初のステージ
+    const todo = list.find(s => !isCleared(s.id));
+    $('resume').hidden = !todo;
+    if (todo) {
+      $('resume').dataset.i = STAGES.indexOf(todo);
+      $('resume').innerHTML = `▶ ${n ? '続きから' : 'はじめる'}<small>${forDevice(todo).title}</small>`;
+    }
     show('home');
   }
 
@@ -315,6 +354,8 @@
     busy = false; stepMisses = 0; scrollP = 0;
     const [no, total] = stepNo(si);
     $('prev').disabled = no <= 1;
+    $('count').textContent = `${no}/${total}`;
+    card.style.maxHeight = '';
     $('prog').style.width = (no - 1) / total * 100 + '%';
     const plain = !s.img && !s.html && !s.seq;
     img.hidden = Boolean(s.html) || plain;
@@ -343,8 +384,9 @@
     const label = s.label || { tap: 'タップ', scroll: 'スクロール', quiz: 'クイズ', info: 'ポイント' }[s.type];
     // banner: 作業のまとまりを大きく示す帯(例: Lot数の変更、買い/売りの段階)
     const banner = s.banner ? `<div class="banner ${s.banner.tone || ''}">${s.banner.text}</div>` : '';
-    let html = banner + `<small>${no} / ${total}　${label}</small><b>${s.text}</b>` + (s.sub ? `<p>${s.sub}</p>` : '');
-    if (s.type === 'quiz') html += `<div class="btns">${s.choices.map((c, i) => `<button data-c="${i}">${c.label}</button>`).join('')}</div>`;
+    let html = banner + `<small>${label}</small><b>${s.text}</b>` + (s.sub ? `<p>${s.sub}</p>` : '');
+    // note: ボタンの補足(小さい字で2行目に出す)
+    if (s.type === 'quiz') html += `<div class="btns">${s.choices.map((c, i) => `<button data-c="${i}">${c.label}${c.note ? `<small>${c.note}</small>` : ''}</button>`).join('')}</div>`;
     // open: 「続ける」で本物のページを新しいタブで開く。アプリ内ブラウザでは、Safariで開き直す案内を出す
     if (s.open && inApp()) html += `<p class="inapp">LINEなどのアプリの中でこのページを開いています。新しいタブもアプリの中で開いてしまうため、このページをSafariで開き直してから進めてください。</p>`;
     if (s.type === 'info') html += `<div class="btns">${s.video ? '<button class="video-btn" data-video>▶ 手順動画を見る</button>' : ''}<button data-next>${s.next || '次へ'}</button></div>`;
@@ -395,6 +437,15 @@
       if (below) { target.classList.add('below'); renderMarks(s, true); }
       return;
     }
+    // どこにも収まらないとき(小さい画面で説明が長い): 一番広い空きにカードを置き、はみ出す分はカードの中でスクロールする
+    const L = (labeled ? 32 : 6) * f, g = 4 * f;
+    const edges = rects.map(([, y, , h]) => [y - L, y + h + g]).sort((a, b) => a[0] - b[0]);
+    let best = [m, 0], at = m;
+    for (const [a, b] of [...edges, [1280 - m, 1280 - m]]) { if (a - at > best[1]) best = [at, a - at]; at = Math.max(at, b); }
+    if (best[1] < 200) return; // 空きが狭すぎるときは、今までどおり
+    card.classList.remove('top', 'bottom', 'mid');
+    card.style.top = best[0] / 12.8 + '%';
+    card.style.maxHeight = best[1] / 12.8 + '%';
   }
 
   // 表示画像・枠・タップ判定で同じコマ番号(1始まり)を使う。
@@ -475,6 +526,15 @@
     si = Math.max(k, 0); step();
   }
 
+  // 正解したら〇を出す(タップした場所。なければ画面の真ん中)
+  function showGood(r) {
+    const g = $('good');
+    g.style.left = (r ? (r[0] + r[2] / 2) / 5.9 : 50) + '%';
+    g.style.top = (r ? (r[1] + r[3] / 2) / 12.8 : 45) + '%';
+    g.classList.remove('on'); void g.offsetWidth; g.classList.add('on');
+    navigator.vibrate?.(20);
+  }
+
   function correct() {
     const s = stage.steps[si];
     busy = true;
@@ -482,6 +542,7 @@
     const version = playVersion;
     const later = (fn, ms) => setTimeout(() => { if (version === playVersion) fn(); }, ms);
     toast.classList.remove('on');
+    if (s.type !== 'info') showGood(s.type === 'tap' ? s.rect : null);
     const go = () => s.warn ? openModal(s.warn, s.warnMark) : advance();
     if (s.type === 'tap') {
       target.className = 'hit';
@@ -505,8 +566,16 @@
     const warns = stage.steps.slice(0, last + 1).flatMap(s => [s.review, s.warn].filter(Boolean));
     $('review').innerHTML = warns.map(w => `<li>${w}</li>`).join('');
     $('reviewTitle').style.display = warns.length ? '' : 'none';
-    $('next').style.display = nextStage() >= 0 ? '' : 'none';
+    const nx = nextStage();
+    $('next').style.display = nx >= 0 ? '' : 'none';
+    if (nx >= 0) $('next').textContent = `次へ：${forDevice(STAGES[nx]).title}`;
+    $('clearName').textContent = stage.title;
     show('clear');
+    // 紙吹雪
+    const colors = ['#ff8a00', '#17a673', '#1f8bff', '#e5263a', '#ffd400'];
+    $('confetti').innerHTML = Array.from({ length: 28 }, (_, k) =>
+      `<i style="left:${(k * 37) % 100}%;background:${colors[k % colors.length]};animation-delay:${(k % 7) * 0.08}s"></i>`).join('');
+    clearTimeout(clear.t); clear.t = setTimeout(() => { $('confetti').innerHTML = ''; }, 2600);
   }
 
   // 押す場所の判定を少しゆるくする: まわりに12px、狭い場所は幅88・高さ56まで広げる(590x1280の座標。幅375の画面で約56x36)。
@@ -570,21 +639,23 @@
   card.addEventListener('click', e => {
     if (busy) return;
     const s = stage.steps[si];
-    if (e.target.dataset.video !== undefined) return openVideo(s.video);
-    if (e.target.dataset.next !== undefined) {
+    const t = e.target.closest?.('button') || e.target; // ボタンの中の小さい字を押しても、ボタンを押したことにする
+    if (t.dataset.video !== undefined) return openVideo(s.video);
+    if (t.dataset.next !== undefined) {
       if (s.open) window.open?.(s.open, '_blank'); // タップした瞬間に開く(ポップアップを止められないように)
       return correct();
     }
-    if (e.target.dataset.c === undefined) return;
-    const c = s.choices[e.target.dataset.c];
+    if (t.dataset.c === undefined) return;
+    const c = s.choices[t.dataset.c];
     // say: 答えに応じた案内を出してから進む。end を付けた答えは、案内のあとステージを終える
     if (c.back) return goBack();
     if (c.say) { busy = true; ending = Boolean(c.end); openModal(c.say, null, c.title); return; }
     if (c.ok) return correct();
-    e.target.classList.add('ng');
+    t.classList.add('ng');
     miss(c.msg, 50, 40);
   });
 
+  $('resume').onclick = () => start(Number($('resume').dataset.i));
   $('stages').addEventListener('click', e => { const b = e.target.closest('.stage'); if (b) start(Number(b.dataset.i)); });
   $('modalOk').onclick = () => {
     closeMark();

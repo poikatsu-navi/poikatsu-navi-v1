@@ -57,15 +57,15 @@ assert.match(node('stages').innerHTML, /まだクリアしていません/);
 assert.doesNotMatch(page, /id="(?:missN|stars|result)"|[★☆]|ミス\s|ノーミス/);
 // 別の版の記録(同じドメイン)は読まない。この版の記録だけでクリア済みになり、全体の進み具合に数える
 saved.set('cleared-safari', 'true'); run('home()');
-assert.match(node('done').innerHTML, /全12ステージ中 <em>0<\/em>/);
+assert.match(node('done').innerHTML, /<em>0<\/em> \/ 12 ステージクリア/);
 saved.set('v3-cleared-safari', 'true'); run('home()');
 assert.match(node('stages').innerHTML, /クリア済み ✓/);
-assert.match(node('done').innerHTML, /全12ステージ中 <em>1<\/em>/);
+assert.match(node('done').innerHTML, /<em>1<\/em> \/ 12 ステージクリア/);
 // iPhoneでは準備編(Android版)を出さず数えない。Androidを選ぶとiPhone用の準備編3つが消える
 assert.doesNotMatch(node('stages').innerHTML, /Android版/);
 assert.match(node('stages').innerHTML, /準備編[\s\S]*1\/3/);
 saved.set('v3-device', 'android'); run('home()');
-assert.match(node('done').innerHTML, /全10ステージ中/);
+assert.match(node('done').innerHTML, / \/ 10 ステージクリア/);
 assert.match(node('stages').innerHTML, /Android版/);
 assert.doesNotMatch(node('stages').innerHTML, /Safariの設定/);
 run('stage = STAGES.find(s => s.id === "android")');
