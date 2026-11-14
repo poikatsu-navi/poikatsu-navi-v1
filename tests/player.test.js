@@ -57,15 +57,15 @@ assert.match(node('stages').innerHTML, /まだクリアしていません/);
 assert.doesNotMatch(page, /id="(?:missN|stars|result)"|[★☆]|ミス\s|ノーミス/);
 // 別の版の記録(同じドメイン)は読まない。この版の記録だけでクリア済みになり、全体の進み具合に数える
 saved.set('cleared-safari', 'true'); run('home()');
-assert.match(node('done').innerHTML, /全11ステージ中 <em>0<\/em>/);
+assert.match(node('done').innerHTML, /全12ステージ中 <em>0<\/em>/);
 saved.set('v3-cleared-safari', 'true'); run('home()');
 assert.match(node('stages').innerHTML, /クリア済み ✓/);
-assert.match(node('done').innerHTML, /全11ステージ中 <em>1<\/em>/);
+assert.match(node('done').innerHTML, /全12ステージ中 <em>1<\/em>/);
 // iPhoneでは準備編(Android版)を出さず数えない。Androidを選ぶとiPhone用の準備編3つが消える
 assert.doesNotMatch(node('stages').innerHTML, /Android版/);
 assert.match(node('stages').innerHTML, /準備編[\s\S]*1\/3/);
 saved.set('v3-device', 'android'); run('home()');
-assert.match(node('done').innerHTML, /全9ステージ中/);
+assert.match(node('done').innerHTML, /全10ステージ中/);
 assert.match(node('stages').innerHTML, /Android版/);
 assert.doesNotMatch(node('stages').innerHTML, /Safariの設定/);
 run('stage = STAGES.find(s => s.id === "android")');
@@ -174,18 +174,18 @@ for (let i = 0; i < count; i++) {
       node('playerClose').onclick(); assert.ok(!node('player').classList.contains('on'));
     }
     if (s.type === 'info') { if (s.next) assert.match(node('card').innerHTML, new RegExp('>' + s.next + '<')); clickCard({ next: '' }); }
-    if (s.type === 'quiz' && s.choices.some(c => c.say)) {
-      // 答えで分かれる質問: 続ける答えは案内を出して次へ進む
-      const go = s.choices.findIndex(c => c.say && !c.end);
-      clickCard({ c: String(go) }); assert.equal(run('si'), k);
-      assert.ok(node('modal').classList.contains('on')); assert.equal(node('modalText').textContent, s.choices[go].say);
-      assert.equal(node('modalTitle').textContent, s.choices[go].title);
-      node('modalOk').onclick(); assert.equal(run('si'), k + 1);
-      continue;
-    } else if (s.type === 'quiz') {
-      const wrong = s.choices.findIndex(c => !c.ok);
-      clickCard({ c: String(wrong) }); assert.equal(run('si'), k);
-      clickCard({ c: String(s.choices.findIndex(c => c.ok)) });
+    if (s.type === 'quiz') {
+      // 間違いの答え(msg だけ)は進まない。進む答えは ok か、案内(say)を出して進むもの
+      for (const [i, c] of s.choices.entries()) if (c.msg && !c.ok) { clickCard({ c: String(i) }); assert.equal(run('si'), k); }
+      const okAt = s.choices.findIndex(c => c.ok), go = okAt >= 0 ? okAt : s.choices.findIndex(c => c.say && !c.end);
+      clickCard({ c: String(go) });
+      if (s.choices[go].say) {
+        assert.equal(run('si'), k);
+        assert.ok(node('modal').classList.contains('on')); assert.equal(node('modalText').textContent, s.choices[go].say);
+        assert.equal(node('modalTitle').textContent, s.choices[go].title);
+        node('modalOk').onclick(); assert.equal(run('si'), k + 1);
+        continue;
+      }
     }
     if (s.type === 'tap') {
       if (s.traps?.length) {
@@ -256,26 +256,29 @@ for (const id of JSON.parse(run('JSON.stringify(visible().map(s => s.id))'))) {
 {
   const opened = [];
   ctx.window.open = (...a) => opened.push(a);
-  run(`start(${indexOf('hapitas-register')})`);
-  const steps = run('stage.steps');
-  const opens = steps.map((s, k) => [s, k]).filter(([s]) => s.open);
-  assert.equal(JSON.stringify(opens.map(([s]) => s.open)), JSON.stringify(['https://hapitas.jp/register/?i=23093511&route=text', 'https://pc.moppy.jp/']));
-  for (const [s, k] of opens) {
+  const urls = { 'hapitas-register': 'https://hapitas.jp/register/?i=23093511&route=text', 'moppy-register': 'https://pc.moppy.jp/' };
+  for (const [id, url] of Object.entries(urls)) {
+    run(`start(${indexOf(id)})`);
+    const steps = run('stage.steps');
+    // 最初に「アカウントを持っていますか？」。持っていれば、ここでステージを終える
+    assert.equal(steps[0].type, 'quiz');
+    clickCard({ c: String(steps[0].choices.findIndex(c => c.end)) }); node('modalOk').onclick();
+    assert.ok(node('clear').classList.contains('on')); assert.equal(run('si'), 0);
+    run(`start(${indexOf(id)})`);
+    const k = steps.findIndex(s => s.open);
+    assert.equal(steps[k].open, url);
     run(`si = ${k}; step()`);
     assert.match(node('card').innerHTML, /data-next>続ける</);
     assert.doesNotMatch(node('card').innerHTML, /class="inapp"/);
     clickCard({ next: '' });
-    assert.equal(opened.at(-1)[0], s.open); assert.equal(opened.at(-1)[1], '_blank'); assert.equal(run('si'), k + 1);
+    assert.equal(opened.at(-1)[0], url); assert.equal(opened.at(-1)[1], '_blank'); assert.equal(run('si'), k + 1);
     const q = steps[k + 1];
-    assert.equal(q.type, 'quiz');
     clickCard({ c: String(q.choices.findIndex(c => c.back)) }); assert.equal(run('si'), k); // いいえ → 開く手順に戻る
-    clickCard({ next: '' }); clickCard({ c: String(q.choices.findIndex(c => c.say)) }); // はい → 案内を出して進む
-    assert.ok(node('modal').classList.contains('on')); node('modalOk').onclick();
-    assert.ok(run('si') === k + 2 || node('clear').classList.contains('on'));
+    clickCard({ next: '' }); clickCard({ c: String(q.choices.findIndex(c => c.ok)) }); assert.equal(run('si'), k + 2); // はい → 次へ
   }
   // LINEなどのアプリ内ブラウザでは、Safariで開き直す案内を出す
   ctx.navigator.userAgent = 'Mozilla/5.0 (iPhone) Safari Line/14.0.0';
-  run(`si = ${opens[0][1]}; step()`); assert.match(node('card').innerHTML, /class="inapp"/);
+  run(`start(${indexOf('hapitas-register')}); si = stage.steps.findIndex(s => s.open); step()`); assert.match(node('card').innerHTML, /class="inapp"/);
   delete ctx.navigator.userAgent; delete ctx.window.open;
 }
 run(`start(${indexOf('browser-flow')})`);

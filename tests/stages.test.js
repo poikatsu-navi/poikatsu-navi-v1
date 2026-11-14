@@ -11,7 +11,7 @@ function test(name, fn) {
   try { fn(); checks++; console.log('PASS ' + name); }
   catch (e) { console.error('FAIL ' + name + '\n' + e.stack); process.exitCode = 1; }
 }
-const order = ['safari', 'tracking', 'relay', 'android', 'hapitas-register', 'unext-flow', 'unext-pending', 'browser-flow', 'a8-flow', 'passbook', 'passbook-moppy', 'inquiry-hapitas', 'inquiry-moppy', 'fx-demo'];
+const order = ['safari', 'tracking', 'relay', 'android', 'hapitas-register', 'moppy-register', 'unext-flow', 'unext-pending', 'browser-flow', 'a8-flow', 'passbook', 'passbook-moppy', 'inquiry-hapitas', 'inquiry-moppy', 'fx-demo'];
 test('unique IDs and requested order', () => {
   assert.equal(new Set(stages.map(s => s.id)).size, stages.length);
   assert.equal(JSON.stringify(stages.map(s => s.id)), JSON.stringify(order));
@@ -62,11 +62,11 @@ for (const stage of stages) test(stage.id + ' data and assets', () => {
     }
     if (s.type === 'quiz') {
       assert.ok(Array.isArray(s.choices) && s.choices.length >= 2, label);
-      if (s.choices.some(c => c.say)) {
+      if (s.choices.some(c => c.say || c.back)) {
         // 答えで分かれる質問: どの答えにも案内があり、続ける答えと終える答えが1つ以上ずつある
         // 答えで分かれる質問: 進む答えには案内があり、戻る答え(back)か終える答え(end)が1つ以上ある
-        for (const c of s.choices) assert.ok(c.label && (c.back || (c.say && c.title)), label);
-        assert.ok(s.choices.some(c => c.say && !c.end) && s.choices.some(c => c.end || c.back), label);
+        for (const c of s.choices) assert.ok(c.label && (c.back || c.ok || c.msg || (c.say && c.title)), label);
+        assert.ok(s.choices.some(c => c.ok || (c.say && !c.end)) && s.choices.some(c => c.end || c.back), label);
       } else {
         assert.equal(s.choices.filter(c => c.ok === true).length, 1, label);
         for (const c of s.choices) assert.ok(c.label && (c.ok || c.msg), label);
