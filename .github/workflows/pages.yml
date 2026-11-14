@@ -1,0 +1,47 @@
+# 公開ページを作る: main(本番)をサイトの直下に、stg(検証用)を /stg/ に置いて、まとめて GitHub Pages に公開する
+#   本番:   https://poikatsu-navi.github.io/poikatsu-navi-v1/
+#   検証用: https://poikatsu-navi.github.io/poikatsu-navi-v1/stg/
+# main か stg が更新されるたびに、両方を取り直して公開し直す
+name: Deploy Pages (main + stg)
+
+on:
+  push:
+    branches: [main, stg]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: src-main
+      - uses: actions/checkout@v4
+        with:
+          ref: stg
+          path: src-stg
+      - name: Build site
+        run: |
+          mkdir -p _site/stg
+          rsync -a --exclude .git --exclude .github --exclude tests src-main/ _site/
+          rsync -a --exclude .git --exclude .github --exclude tests src-stg/ _site/stg/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
