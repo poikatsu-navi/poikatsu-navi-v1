@@ -213,6 +213,22 @@ for (let i = 0; i < count; i++) {
   for (const s of steps.filter(s => s.warn)) assert.ok(node('review').innerHTML.includes(s.warn));
   console.log('PASS full playthrough ' + run('stage.id'));
 }
+// 「戻る」でひとつ前の手順に戻る。最初の手順では押せない。スクロールしてタップは1つとして戻る
+{
+  run(`start(STAGES.findIndex(s => s.id === 'safari'))`);
+  assert.equal(node('prev').disabled, true);
+  const steps = run('stage.steps');
+  const merged = k => k > 0 && steps[k].type === 'tap' && steps[k - 1].type === 'scroll' && steps[k - 1].target;
+  const plain = steps.findIndex((s, k) => k > 1 && !merged(k) && !merged(k - 1));
+  run(`si = ${plain}; step()`); assert.equal(node('prev').disabled, false);
+  node('prev').onclick(); assert.equal(run('si'), plain - 1);
+  const sc = steps.findIndex((s, k) => s.type === 'scroll' && s.target && steps[k + 1]?.type === 'tap');
+  run(`si = ${sc + 2}; step()`); node('prev').onclick(); assert.equal(run('si'), sc); // スクロールの手順まで戻る
+  run(`si = ${sc + 1}; step()`); node('prev').onclick(); assert.equal(run('si'), sc - 1); // 同じ番号のスクロールは飛ばす
+  // 正解のあとの待ち時間中に戻っても、前のタイマーで先に進まない
+  run('si = 1; step()'); tap(steps[1].rect); node('prev').onclick(); flush(); assert.equal(run('si'), 0);
+  console.log('PASS back button returns to the previous step');
+}
 // 対象外の答えを選ぶと、案内のあとステージを終える(そのあとの手順は出さない)
 {
   const k = run(`STAGES.find(s => s.id === 'unext-flow').steps.findIndex(s => s.choices?.some(c => c.end))`);

@@ -51,6 +51,8 @@
   #play { align-items: center; height: 100dvh; }
   .bar { width: 100%; max-width: 520px; height: 48px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 12px; }
   .bar button { background: rgba(255, 255, 255, .15); width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
+  .bar button#prev { width: auto; border-radius: 18px; padding: 0 12px; font-size: 14px; font-weight: 700; flex: none; }
+  .bar button#prev:disabled { opacity: .35; }
   .track { flex: 1; height: 10px; background: rgba(255, 255, 255, .2); border-radius: 99px; overflow: hidden; }
   .track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
   /* スクショの枠。高さに合わせて、比率 590:1280 を保つ */
@@ -184,6 +186,7 @@
 <section id="play" class="view">
   <div class="bar">
     <button id="quit" aria-label="やめる">✕</button>
+    <button id="prev" aria-label="ひとつ前に戻る">‹ 戻る</button>
     <div class="track"><i id="prog"></i></div>
   </div>
   <div id="shot">
@@ -298,8 +301,8 @@
 
   // 表示用の番号: 「スクロールして探してタップ」はスクロールとタップで1つと数える
   // (スクロールの途中でタップすると次のタップを飛ばすため、別々に数えると番号が飛ぶ)
+  const merged = k => k > 0 && stage.steps[k].type === 'tap' && stage.steps[k - 1].type === 'scroll' && stage.steps[k - 1].target;
   function stepNo(i) {
-    const merged = k => k > 0 && stage.steps[k].type === 'tap' && stage.steps[k - 1].type === 'scroll' && stage.steps[k - 1].target;
     let no = 0, total = 0;
     stage.steps.forEach((_, k) => { if (!merged(k)) total++; if (k <= i && !merged(k)) no++; });
     return [no, total];
@@ -311,6 +314,7 @@
     const s = stage.steps[si];
     busy = false; stepMisses = 0; scrollP = 0;
     const [no, total] = stepNo(si);
+    $('prev').disabled = no <= 1;
     $('prog').style.width = (no - 1) / total * 100 + '%';
     const plain = !s.img && !s.html && !s.seq;
     img.hidden = Boolean(s.html) || plain;
@@ -634,6 +638,16 @@
     $('player').classList.remove('on');
   };
   $('quit').onclick = home;
+  // ひとつ前の手順に戻る。「スクロールしてタップ」は1つと数えているので、まとめて戻る
+  $('prev').onclick = () => {
+    let k = (merged(si) ? si - 1 : si) - 1;
+    if (k > 0 && merged(k)) k--;
+    if (k < 0) return;
+    playVersion++; // 正解のあとの待ち時間中でも、前のタイマーで先に進まないようにする
+    closeMark(); $('modal').classList.remove('on');
+    alerting = ending = false; down = null;
+    si = k; step();
+  };
   $('back').onclick = home;
   $('again').onclick = () => start(STAGES.indexOf(stage.base || stage));
   // 次のステージ: 自分のスマホ向けでない準備編は飛ばす
