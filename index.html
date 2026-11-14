@@ -137,6 +137,8 @@
   #card.compact .btns { margin-top: 8px; gap: 8px; }
   #card.compact .btns button { padding: 9px; font-size: 14px; }
   #card .btns button.video-btn { background: #eaf0ff; color: #1d3272; border: 2px solid #1d3272; }
+  #card .btns button.tab-btn { background: var(--accent); }
+  #card p.inapp { color: var(--warn); font-weight: 700; }
   /* 手順動画の再生画面 */
   #player { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; z-index: 20; }
   #player.on { display: flex; }
@@ -341,7 +343,9 @@
     const banner = s.banner ? `<div class="banner ${s.banner.tone || ''}">${s.banner.text}</div>` : '';
     let html = banner + `<small>${no} / ${total}　${label}</small><b>${s.text}</b>` + (s.sub ? `<p>${s.sub}</p>` : '');
     if (s.type === 'quiz') html += `<div class="btns">${s.choices.map((c, i) => `<button data-c="${i}">${c.label}</button>`).join('')}</div>`;
-    if (s.type === 'info') html += `<div class="btns">${s.video ? '<button class="video-btn" data-video>▶ 手順動画を見る</button>' : ''}<button data-next>${s.next || '次へ'}</button></div>`;
+    // openTab: 本物の新しいタブを開いて、コピーしたリンクを実際に貼り付けてもらう
+    if (s.openTab && inApp()) html += `<p class="inapp">LINEなどのアプリの中でこのページを開いています。新しいタブもアプリの中で開いてしまうため、このページをSafariで開き直してから試してください。</p>`;
+    if (s.type === 'info') html += `<div class="btns">${s.video ? '<button class="video-btn" data-video>▶ 手順動画を見る</button>' : ''}${s.openTab ? '<button class="tab-btn" data-tab>新しいタブを開く</button>' : ''}<button data-next>${s.next || '次へ'}</button></div>`;
     card.innerHTML = html;
     if (!plain) avoidBoxes(s);
     card.scrollTop = 0;
@@ -473,6 +477,9 @@
     try { navigator.clipboard ? navigator.clipboard.writeText(text).catch(fallback) : fallback(); } catch { fallback(); }
   }
 
+  // LINE・Facebook・Instagramなどのアプリ内ブラウザ(ポイントサイトの申し込みには使わない)
+  const inApp = () => /\bLine\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(navigator.userAgent || '');
+
   function correct() {
     const s = stage.steps[si];
     busy = true;
@@ -575,6 +582,12 @@
     if (busy) return;
     const s = stage.steps[si];
     if (e.target.dataset.video !== undefined) return openVideo(s.video);
+    if (e.target.dataset.tab !== undefined) {
+      // 念のためもう一度コピーしてから、空のタブを開く(貼り付けは利用者が行う)
+      copyText(s.openTab);
+      window.open?.('about:blank', '_blank');
+      return;
+    }
     if (e.target.dataset.next !== undefined) return correct();
     if (e.target.dataset.c === undefined) return;
     const c = s.choices[e.target.dataset.c];

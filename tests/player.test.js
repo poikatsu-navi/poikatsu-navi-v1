@@ -227,6 +227,26 @@ for (let i = 0; i < count; i++) {
   }
   delete ctx.navigator.clipboard;
 }
+// openTab 付きの説明は「新しいタブを開く」を出し、押すとURLをコピーし直して空のタブを開く(進まない)
+{
+  const copied = [], opened = [];
+  ctx.navigator.clipboard = { writeText: text => { copied.push(text); return Promise.resolve(); } };
+  ctx.window.open = (...a) => opened.push(a);
+  run(`start(STAGES.findIndex(s => s.id === 'hapitas-register'))`);
+  const tabs = run('stage.steps').map((s, k) => [s, k]).filter(([s]) => s.openTab);
+  assert.equal(tabs.length, 2);
+  for (const [s, k] of tabs) {
+    run(`si = ${k}; step()`);
+    assert.match(node('card').innerHTML, /data-tab>新しいタブを開く</);
+    assert.doesNotMatch(node('card').innerHTML, /class="inapp"/);
+    clickCard({ tab: '' });
+    assert.equal(copied.at(-1), s.openTab); assert.equal(opened.at(-1)[0], 'about:blank'); assert.equal(run('si'), k);
+  }
+  // LINEなどのアプリ内ブラウザでは、Safariで開き直す案内を出す
+  ctx.navigator.userAgent = 'Mozilla/5.0 (iPhone) Safari Line/14.0.0';
+  run(`si = ${tabs[0][1]}; step()`); assert.match(node('card').innerHTML, /class="inapp"/);
+  delete ctx.navigator.userAgent; delete ctx.navigator.clipboard; delete ctx.window.open;
+}
 // 対象外の答えを選ぶと、案内のあとステージを終える(そのあとの手順は出さない)
 {
   const k = run(`STAGES.find(s => s.id === 'unext-flow').steps.findIndex(s => s.choices?.some(c => c.end))`);
