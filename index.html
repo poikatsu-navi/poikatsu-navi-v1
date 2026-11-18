@@ -375,11 +375,11 @@
     // cardAt: 画面のこの高さ(590x1280の座標)に説明を出す。空いている場所に置くとき用
     card.style.top = s.cardAt != null ? s.cardAt / 12.8 + '%' : '';
     if (s.cardAt != null) card.classList.remove('top', 'bottom', 'mid');
-    // label: ステップごとに見出しを変えたいとき(例: 手順とは関係ない豆知識)
-    const label = s.label || { tap: 'タップ', scroll: 'スクロール', quiz: 'クイズ', info: 'ポイント' }[s.type];
+    // label: ステップごとの小さい見出し(例: 「ハピタスの登録」「⚠️ よくある誤解」)。付けていないステップは出さない
+    const label = s.label || '';
     // banner: 作業のまとまりを大きく示す帯(例: Lot数の変更、買い/売りの段階)
     const banner = s.banner ? `<div class="banner ${s.banner.tone || ''}">${s.banner.text}</div>` : '';
-    let html = banner + `<small>${label}</small><b>${s.text}</b>` + (s.sub ? `<p>${s.sub}</p>` : '');
+    let html = banner + (label ? `<small>${label}</small>` : '') + `<b>${s.text}</b>` + (s.sub ? `<p>${s.sub}</p>` : '');
     // note: ボタンの補足(小さい字で2行目に出す)
     if (s.type === 'quiz') html += `<div class="btns">${s.choices.map((c, i) => `<button data-c="${i}">${c.label}${c.note ? `<small>${c.note}</small>` : ''}</button>`).join('')}</div>`;
     // open: 「続ける」で本物のページを新しいタブで開く。アプリ内ブラウザでは、Safariで開き直す案内を出す
