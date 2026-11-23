@@ -356,7 +356,7 @@ const STAGES = [
   },
   {
     id: 'passbook-moppy',
-    title: 'ポイント通帳の見方（moppy版）',
+    title: 'ポイント通帳の見方（モッピー版）',
     lead: 'モッピーで「承認」「否認」を見分ける方法',
     guide: true,
     steps: [
