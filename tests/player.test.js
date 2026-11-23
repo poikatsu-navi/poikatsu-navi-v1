@@ -318,7 +318,7 @@ saved.set('v3-device', 'iphone');
 run(`start(${indexOf('passbook')})`);
 assert.equal(node('img').style.clipPath, ''); assert.equal(node('shot').style.background, '');
 run(`start(${indexOf('hapitas-register')})`);
-assert.match(run('JSON.stringify(stage)'), /必ずSafariからハピタスを開いてください/);
+assert.match(run('JSON.stringify(stage)'), /ハピタスは必ずSafariから開いてください/);
 console.log('PASS android shows Chrome instead of Safari');
 
 // 狭い押す場所は少し外れても正解。間違いの場所(traps)は今までどおり優先する
